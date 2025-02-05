@@ -4,6 +4,7 @@ import {  useNavigate } from 'react-router-dom';
 import PaginationComponent from 'components/PaginationComponent'; 
 import usePaginationStore from 'store/usePaginationStore';
 import { restaurantStore } from 'store/restaurantStore';
+
 const AdminReserve = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,21 +54,19 @@ const AdminReserve = () => {
   } ;
 
   return (
-    <Container className="mt-4">
-      <h1 className="mb-4">레스토랑 예약 관리</h1>
+    <Container fluid>
+      <h1 className="js-admin-title">레스토랑 예약 관리</h1>
       
       <Form className="mb-3" onSubmit={handleSearch}>
         <Row className="align-items-center">
-          <Col xs={11}>
+          <Col className='d-flex justify-content-center mb-2'>
             <Form.Control
               type="text"
               placeholder="레스토랑 이름 입력"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </Col>
-          <Col xs={1}>
-            <Button variant="primary" type="submit" className="w-100">
+            <Button variant="primary" type="submit" className="button-search">
               검색
             </Button>
           </Col>

@@ -1,38 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Form, Container, Row, Col } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; 
+import Pagination from '../jh/Pagination';
+import tokenStore from '../../store/tokenStore';
 import "../../css/Review.css";
 
+const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
+// 레스토랑 검색 및 전체 검색 API 통합
+export const searchRestaurants = async (searchParams) => {
+  try {
+    // 쿼리 문자열 생성
+    const queryString = new URLSearchParams(searchParams).toString();
+    const endpoint = `${apiUrl}/api/restaurant/search?${queryString}`;
+
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('레스토랑 검색에 실패했습니다.');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error searching restaurants:', error);
+    throw new Error('레스토랑 검색에 실패했습니다.');
+  }
+};
+
 function AdminReview() {
-  const [restaurant, setRestaurant] = useState([]);  // 레스토랑 데이터 상태
+  const [restaurant, setRestaurant] = useState([]);
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(false);
-  // 페이지네이션
+  const token = tokenStore((state) => state.token);
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [pageNumber, setPageNumber] = useState(1); // 현재 페이지
-  const [pageGroup, setPageGroup] = useState(0);   // 페이지 그룹 (0부터 시작)
-  const buttonsPerPage = 10; // 한 번에 보여줄 페이지 버튼 수
-
   const [isHighOrder, setIsHighOrder] = useState(true); // true: 내림차순, false: 오름차순
+  const [searchTotal, setSearchTotal] = useState(0);  // 총 레스토랑 수 상태
+  const [searchParams, setSearchParams] = useState({
+    query: '',               // 검색어
+    searchOption: 'all',    // 검색 조건 (기본값: 도시)
+    page: 1,
+    size: 24,
+  });
 
-  const navigate = useNavigate();
-  const apiUrl = process.env.REACT_APP_API_BASE_URL;
+  const navigate = useNavigate(); 
 
   const fetchRestaurants = async (page = 1, keyword = '', order = 'desc') => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `${apiUrl}/api/restaurant?page=${page}&size=20&keyword=${keyword}&order=${order}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setRestaurant(data.content);
-        setTotalPages(data.totalPages);
-        setPageNumber(page); // 현재 페이지 업데이트
-        console.log(data)
-      } else {
-        console.error("가게 정보를 가져오는 데 실패했습니다.");
-      }
+      const params = {
+        page,
+        size: 20,
+        keyword,
+        order,
+      };
+      const response = await searchRestaurants(params);
+      setRestaurant(response.content);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error("가게 정보를 가져오는 중 오류 발생:", error);
     } finally {
@@ -40,67 +70,60 @@ function AdminReview() {
     }
   };
 
-  const handleSearch = () => {
-    fetchRestaurants(1, keyword); // 검색 시 첫 페이지로 이동
+const handleSearch = async (page = 1) => {
+  setLoading(true);  // 로딩 시작
+
+  const { query, searchOption } = searchParams;
+
+  const params = {
+    ...searchParams,
+    page: currentPage,
+    query: searchParams.query || keyword,
   };
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPageNumber(newPage);
-      fetchRestaurants(newPage, keyword); // 새 페이지 데이터 가져오기
-    }
+  try {
+    const response = await searchRestaurants(params);
+    setRestaurant(response.content || []);
+    setTotalPages(response.totalPages);
+    setSearchTotal(response.totalElements);
+  } catch (err) {
+    console.error('검색 오류:', err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const handlePageChange = async (page) => {
+    if (page === currentPage) return;
+    setCurrentPage(page); // 현재 페이지 업데이트
+    fetchRestaurants(page, keyword); // 페이지 변경 시 검색어 유지
+    window.scrollTo(0, 0);
   };
-  const handleNextGroup = () => {
-    if ((pageGroup + 1) * buttonsPerPage < totalPages) {
-      const nextPage = (pageGroup + 1) * buttonsPerPage + 1; // 다음 그룹의 첫 페이지
-      setPageGroup(pageGroup + 1);
-      setPageNumber(nextPage);
-      fetchRestaurants(nextPage, keyword); // 새로운 페이지 데이터 가져오기
-    }
-  };
-  const handlePrevGroup = () => {
-    if (pageGroup > 0) {
-      const prevPage = (pageGroup - 1) * buttonsPerPage + 1; // 이전 그룹의 첫 페이지
-      setPageGroup(pageGroup - 1);
-      setPageNumber(prevPage);
-      fetchRestaurants(prevPage, keyword); // 새로운 페이지 데이터 가져오기
-    }
-  };
-  // 현재 그룹의 시작 페이지와 끝 페이지
-  const startPage = pageGroup * buttonsPerPage + 1;
-  const endPage = Math.min(startPage + buttonsPerPage - 1, totalPages);
 
   const handleReviewClick = (restaurantId) => {
-    if (typeof restaurantId !== 'string' && typeof restaurantId !== 'number') {
-      console.error('Invalid restaurantId:', restaurantId);
-      return;
-    }
-    navigate(`/reviewList/${restaurantId}`); // restaurantId를 경로에 포함
+    navigate(`/reviewList/${restaurantId}`);
   };
+
   const handleReportClick = (restaurantId) => {
-    if (typeof restaurantId !== 'string' && typeof restaurantId !== 'number') {
-      console.error('Invalid restaurantId:', restaurantId);
-      return;
-    }
-    navigate(`/report/${restaurantId}`); // restaurantId를 경로에 포함
+    navigate(`/report/${restaurantId}`);
   };
 
   const handleRatingSort = () => {
     const newOrder = !isHighOrder; // 현재 상태 반전
     setIsHighOrder(newOrder);
-    fetchRestaurants(1, keyword, newOrder ? "desc" : "asc"); // 정렬 방식 전달
+    fetchRestaurants(1, keyword, newOrder ? "desc" : "asc");
   };
-  
+
   useEffect(() => {
-    fetchRestaurants(); // 초기 데이터 로드
-  }, []);
+    fetchRestaurants(currentPage, keyword); // 페이지 변경 시 검색어로 검색
+  }, [currentPage]);
 
   return (
     <Container fluid>
       <Row>
         <Col md={12}>
-          <h3 className="mt-4">리뷰 관리</h3>
-          <Form className="d-flex mb-4">
+          <h1 className="js-admin-title">리뷰 관리</h1>
+          <Form className="js-form d-flex justify-content-center mb-4">
             <Form.Control
               type="text"
               placeholder="키워드로 검색"
@@ -125,11 +148,9 @@ function AdminReview() {
           ) : (
             <div className="table-container">
               <div className="table-header">
-                <div>#</div>
+                <div>가게번호</div>
                 <div>가게명</div>
-                <div
-                  onClick={handleRatingSort}
-                >
+                <div onClick={handleRatingSort}>
                   {isHighOrder ? "별점 높은순" : "별점 낮은순"}
                 </div>
                 <div>주소</div>
@@ -138,9 +159,9 @@ function AdminReview() {
               </div>
               <div className="table-body">
                 {restaurant.length > 0 ? (
-                  restaurant.map((item, index) => (
+                  restaurant.map((item) => (
                     <div key={item.restaurantId} className="table-row">
-                      <div>{index + 1 + (pageNumber - 1) * 20}</div>
+                      <div>{item.restaurantId}</div>
                       <div>{item.name}</div>
                       <div>{item.averageRating || 'N/A'}</div>
                       <div>{item.roadAddr || item.jibunAddr || 'N/A'}</div>
@@ -149,7 +170,7 @@ function AdminReview() {
                         <Button
                           variant="primary"
                           className="mb-2"
-                          onClick={() => handleReviewClick(item.restaurantId)} // 올바른 값 전달
+                          onClick={() => handleReviewClick(item.restaurantId)}
                         >
                           리뷰관리
                         </Button>
@@ -170,37 +191,12 @@ function AdminReview() {
 
           {/* 페이지네이션 */}
           <div className="pagination d-flex align-items-center">
-          {/* 이전 그룹 버튼 */}
-          <Button
-            variant="secondary"
-            onClick={handlePrevGroup}
-            disabled={pageGroup === 0}
-            className="me-2"
-          >
-            이전
-          </Button>
-
-          {/* 페이지 번호 */}
-          {Array.from({ length: endPage - startPage + 1 }, (_, i) => (
-            <Button
-              key={startPage + i}
-              variant={pageNumber === startPage + i ? "primary" : "secondary"}
-              onClick={() => handlePageChange(startPage + i)}
-              className="me-2"
-            >
-              {startPage + i}
-            </Button>
-          ))}
-
-          {/* 다음 그룹 버튼 */}
-          <Button
-            variant="secondary"
-            onClick={handleNextGroup}
-            disabled={endPage === totalPages}
-          >
-            다음
-          </Button>
-        </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
         </Col>
       </Row>
     </Container>

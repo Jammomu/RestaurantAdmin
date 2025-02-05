@@ -483,18 +483,15 @@ const renderImageList = () => {
 };
 
   return (
-    <Container>
+    <Container fluid>
       {/* <h2>레스토랑 목록</h2> */}
-
-      <SearchBar
-       searchParams={searchParams}
-       handleInputChange={handleInputChange}
-       handleFilterToggle={handleFilterToggle}
-       handleSearch={handleSearch}
-      />
-       <div className="mb-3">
-      <strong>등록 된 전체 레스토랑 {totalRestaurants}개</strong>
-    </div>
+      <h1 className="js-admin-title">레스토랑 관리</h1>
+        <SearchBar
+        searchParams={searchParams}
+        handleInputChange={handleInputChange}
+        handleFilterToggle={handleFilterToggle}
+        handleSearch={handleSearch}
+        />
       <Row className="align-items-center mt-4">
         
         <Col><div className="mb-3">

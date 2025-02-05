@@ -10,10 +10,10 @@ const SearchBar = ({ searchParams, handleInputChange, handleFilterToggle, handle
   };
 
   return (
-    <Form onSubmit={handleSubmit} className="mt-4 mb-4"> {/* 폼 제출 시 handleSubmit 호출 */}
+    <Form onSubmit={handleSubmit} className="mb-4"> {/* 폼 제출 시 handleSubmit 호출 */}
       {/* 검색 조건과 검색어 입력 */}
       <Row className="align-items-center">
-      <Col xs={10} lg={6}>
+      <Col className='d-flex justify-content-center'>
           <Form.Group controlId="formQuery">
             {/* <Form.Label>검색어</Form.Label> */}
             <Form.Control
@@ -24,16 +24,15 @@ const SearchBar = ({ searchParams, handleInputChange, handleFilterToggle, handle
               onChange={handleInputChange}
             />
           </Form.Group>
-        </Col>
-
-        <Col xs={2} className="">
-          <Button className="btn-secondary" type="submit">검색</Button>
+          <Button variant="primary" type="submit" className="button-search">
+            검색
+          </Button>
         </Col>
       </Row>
         <Col>
          {/* 검색 조건 (버튼 그룹) */}
           <Form.Group controlId="formSearchOption">
-            <div className="mt-3" role="">
+            <div className="mt-3 text-center">
             {/* <Form.Label className='me-3'>검색 조건</Form.Label> */}
               <Button 
                 variant={searchParams.searchOption === 'all' ? 'danger' : 'outline-danger'} 
@@ -106,7 +105,7 @@ const SearchBar = ({ searchParams, handleInputChange, handleFilterToggle, handle
         </Col>
       
 
-        <Row className="align-items-center mt-3">
+        <Row className="align-items-center mt-3 text-center">
           <Col>
             <Button
               className='me-2'
