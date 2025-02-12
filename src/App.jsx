@@ -32,7 +32,6 @@ function App() {
               <Route path="/reviewList/:restaurantId" element={<AdminReviewList />} />
               <Route path="/report/:restaurantId" element={<AdminReport />} />
               <Route path="/manage-reports" element={<ManageReports />} />
-              <Route path="/manage-boards" element={<ManageBoards />} />
               <Route path="/manager-reservations/reservations" element={<Reservationlistpage />} />
               <Route path="/restaurant/update/:restaurantId" element={<Update />} />
               <Route path="/restaurant/add" element={<AddRestaurant />} />
